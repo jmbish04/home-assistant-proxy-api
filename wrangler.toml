@@ -23,7 +23,7 @@ AI_MODEL="@cf/meta/llama-4-scout-17b-16e-instruct"
 [observability.logs]
 enabled = true
 
-[[ai]]
+[ai]
 binding = "AI" # Enables `env.AI.run()`
 
 # Enable Node.js compatibility if any Node-specific modules are used indirectly

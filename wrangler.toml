@@ -5,6 +5,7 @@ compatibility_date = "2024-05-01" # Or your desired compatibility date
 
 # Specifies that this is an ES Module worker
 [vars]
+AI_MODEL="@cf/meta/llama-4-scout-17b-16e-instruct"
 # __app_id = "your-specific-app-id" # Optional: if you want to override the default-app-id for Firestore paths
 
 # Secrets that need to be set in your Cloudflare Worker dashboard or via wrangler secret put
@@ -12,15 +13,18 @@ compatibility_date = "2024-05-01" # Or your desired compatibility date
 # wrangler secret put HOMEASSISTANT_URI
 # wrangler secret put HOMEASSISTANT_TOKEN
 # wrangler secret put FIREBASE_CONFIG
-[[unsafe.bindings]]
-name = "ENV_BINDING"
-type = "vars"
-vars = [ "WORKER_API_KEY", "FIREBASE_CONFIG" ]
+# [[unsafe.bindings]]
+# name = "ENV_BINDING"
+# type = "vars"
+# vars = [ "WORKER_API_KEY", "FIREBASE_CONFIG" ]
 
 # "HOMEASSISTANT_URI", "HOMEASSISTANT_TOKEN"
 
 [observability.logs]
 enabled = true
+
+[[ai]]
+binding = "AI" # Enables `env.AI.run()`
 
 # Enable Node.js compatibility if any Node-specific modules are used indirectly
 # The current code uses Firebase SDK v9+ which is modular and generally worker-friendly,
@@ -36,7 +40,8 @@ enabled = true
 # upload.main = "./worker.js"
 
 # If you are not using a build step and your main file (e.g. src/index.js) is directly deployable:
-[rules]
+# Module rules
+[[rules]]
 type = "ESModule"
 globs = ["**/*.js"]
 

@@ -2,6 +2,22 @@ name = "home-assistant-proxy-api"
 main = "src/index.js"
 compatibility_date = "2024-05-01"
 compatibility_flags = ["nodejs_compat"]
+account_id = "b3304b14848de15c72c24a14b0cd187d"
+
+# Secret Store bindings
+# Keep these at top of wrangler.toml -- before any [keys]
+#Zone:Zone:Read (if using zone-scoped resources)
+# Account:Cloudflare Workers:Edit
+#Account:Account:Read
+#Zone:Zone Settings:Read (if applicable)
+secrets_store_secrets = [
+  { binding = "HASS_URL", store_id = "8c42fa70938644e0a8a109744467375f", secret_name = "HASSIO_URI" },
+  { binding = "HASS_TOKEN", store_id = "8c42fa70938644e0a8a109744467375f", secret_name = "HASSIO_TOKEN" },
+  { binding = "CLOUDFLARE_API_KEY", store_id = "8c42fa70938644e0a8a109744467375f", secret_name = "CLOUDFLARE_API_KEY" },
+  { binding = "CLOUDFLARE_ACCOUNT_ID", store_id = "8c42fa70938644e0a8a109744467375f", secret_name = "CLOUDFLARE_ACCOUNT_ID" },
+  { binding = "WORKER_API_KEY", store_id = "8c42fa70938644e0a8a109744467375f", secret_name = "WEBHOOK_TOKEN" },
+]
+
 
 [vars]
 AI_MODEL="@cf/meta/llama-4-scout-17b-16e-instruct"

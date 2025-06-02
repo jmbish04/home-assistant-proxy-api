@@ -1,30 +1,21 @@
 import {
+  callService,
   createConnection,
   createLongLivedTokenAuth,
-  callService,
+  getConfig,
   getServices,
   getStates,
-  getConfig,
   getUser,
-  getPanels,
-  getLovelaceConfig,
-  getCardConfig,
-  getEntityRegistry,
-  getDeviceRegistry,
-  getAreaRegistry,
-  subscribeEntities,
   subscribeConfig,
+  subscribeEntities,
   subscribeServices,
-  subscribePanels,
-  subscribeLovelace,
 } from "home-assistant-js-websocket";
 
 
 
 // Drizzle ORM and D1 imports
+import { count, desc, eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { sqliteTable, text, integer, sql } from 'drizzle-orm/sqlite-core';
-import { count, desc, eq } from 'drizzle-orm';
 
 // Hono for routing
 import { Hono } from 'hono';
@@ -111,15 +102,6 @@ const openApiSpec = {
         responses: {
           "200": { description: "Service is healthy.", content: { "application/json": { schema: { type: "object" } } } },
           "503": { description: "Service is unhealthy.", content: { "application/json": { schema: { type: "object" } } } }
-        }
-      },
-      head: {
-        summary: "Service Health Check (HEAD)",
-        description: "Performs a health check without returning a body. This endpoint does not require authorization.",
-        security: [], // Override global security
-        responses: {
-          "200": { description: "Service is healthy." },
-          "503": { description: "Service is unhealthy." }
         }
       }
     },
@@ -307,16 +289,14 @@ export const subscribeToStateChanges = (c, cb) => { if(!c || typeof cb !== 'func
 export const getConfiguration = async c => { if(!c) throw new Error("Conn required."); return getConfig(c);};
 export const getUserInfo = async c => { if(!c) throw new Error("Conn required."); return getUser(c);};
 export const getAvailableServices = async c => { if(!c) throw new Error("Conn required."); return getServices(c);};
-export const getAvailablePanels = async c => { if(!c) throw new Error("Conn required."); return getPanels(c);};
-export const getLovelaceConfiguration = async c => { if(!c) throw new Error("Conn required."); return getLovelaceConfig(c);};
-export const getCardConfiguration = async (c, id) => { if(!c || !id) throw new Error("Conn/ID err."); return getCardConfig(c, id);};
+export const getAvailablePanels = async c => { if(!c) throw new Error("Conn required."); return c.sendMessagePromise({ type: "get_panels" }); };
+export const getLovelaceConfiguration = async c => { if(!c) throw new Error("Conn required."); return c.sendMessagePromise({ type: "lovelace/config" }); };
+export const getCardConfiguration = async (c, id) => { if(!c || !id) throw new Error("Conn/ID err."); return c.sendMessagePromise({ type: "lovelace/card/get_config", card_id: id }); };
 export const subscribeToConfigChanges = (c, cb) => { if(!c || typeof cb !== 'function') throw new Error("Conn/CB err."); return subscribeConfig(c, cb);};
 export const subscribeToServiceChanges = (c, cb) => { if(!c || typeof cb !== 'function') throw new Error("Conn/CB err."); return subscribeServices(c, cb);};
-export const subscribeToPanelChanges = (c, cb) => { if(!c || typeof cb !== 'function') throw new Error("Conn/CB err."); return subscribePanels(c, cb);};
-export const subscribeToLovelaceChanges = (c, cb) => { if(!c || typeof cb !== 'function') throw new Error("Conn/CB err."); return subscribeLovelace(c, cb);};
-export const getEntityRegistryEntries = async c => { if(!c) throw new Error("Conn required."); return getEntityRegistry(c);};
-export const getDeviceRegistryEntries = async c => { if(!c) throw new Error("Conn required."); return getDeviceRegistry(c);};
-export const getAreaRegistryEntries = async c => { if(!c) throw new Error("Conn required."); return getAreaRegistry(c);};
+export const getEntityRegistryEntries = async c => { if(!c) throw new Error("Conn required."); return c.sendMessagePromise({ type: "config/entity_registry/list" }); };
+export const getDeviceRegistryEntries = async c => { if(!c) throw new Error("Conn required."); return c.sendMessagePromise({ type: "config/device_registry/list" }); };
+export const getAreaRegistryEntries = async c => { if(!c) throw new Error("Conn required."); return c.sendMessagePromise({ type: "config/area_registry/list" }); };
 
 
 // --- Hono Middleware ---
@@ -338,7 +318,7 @@ app.use('*', async (c, next) => {
 app.use('/api/*', async (c, next) => {
   const path = new URL(c.req.url).pathname;
   const publicApiPaths = ['/api/health', '/api/openapi.json', '/api/docs']; // Adjusted to match Hono routing
-  
+
   if (publicApiPaths.includes(path) || path === '/openapi.json' || path === '/docs') { // Direct check for root paths
     await next();
     return;
@@ -386,7 +366,7 @@ app.get('/api/health', async (c) => {
     checks.kv_store = "pending";
 
     if (!HASS_URI_HEALTH || !HASS_TOKEN_HEALTH) { overallStatus = "error"; httpStatus = 503; }
-    
+
     let healthHaConnection;
     if (HASS_URI_HEALTH && HASS_TOKEN_HEALTH) {
         try { healthHaConnection = await initConnection(HASS_URI_HEALTH, HASS_TOKEN_HEALTH); await getConfig(healthHaConnection); checks.home_assistant_connection = "ok"; }
@@ -403,30 +383,9 @@ app.get('/api/health', async (c) => {
         if (kv) { try { await kv.get("health-check-dummy-key"); checks.kv_store = "ok"; } catch (e) { checks.kv_store = `error: ${e.message}`; overallStatus = "error"; httpStatus = 503; } }
         else { checks.kv_store = "error: KV binding found but instance not initialized"; overallStatus = "error"; httpStatus = 503; }
     } else { checks.kv_store = "skipped: KV binding not configured"; }
-            
+
     return c.json({ status: overallStatus, timestamp: new Date().toISOString(), checks }, httpStatus);
 });
-app.head('/api/health', async (c) => { // HEAD request for health
-    // Simplified logic for HEAD, just determine status code
-    const HASS_URI_HEALTH = c.env.HOMEASSISTANT_URI;
-    const HASS_TOKEN_HEALTH = c.env.HOMEASSISTANT_TOKEN;
-    let httpStatus = 200;
-    if (!HASS_URI_HEALTH || !HASS_TOKEN_HEALTH) httpStatus = 503;
-    // Simplified checks for critical services for HEAD
-    if (httpStatus === 200 && HASS_URI_HEALTH && HASS_TOKEN_HEALTH) {
-      let healthHaConn;
-      try { healthHaConn = await initConnection(HASS_URI_HEALTH, HASS_TOKEN_HEALTH); await getConfig(healthHaConn); }
-      catch (e) { httpStatus = 503; }
-      finally { if (healthHaConn && healthHaConn.connected) healthHaConn.close(); }
-    }
-    if (httpStatus === 200 && c.env.DB && d1) { try { await d1.select({ value: sql`1` }).execute(); } catch (e) { httpStatus = 503; } }
-    else if (c.env.DB && !d1) { httpStatus = 503; }
-    if (httpStatus === 200 && c.env.KV && kv) { try { await kv.get("health-check-dummy-key"); } catch (e) { httpStatus = 503; } }
-    else if (c.env.KV && !kv) { httpStatus = 503; }
-
-    return new Response(null, { status: httpStatus });
-});
-
 
 // Home Assistant Connection Middleware (for routes needing HA)
 const haAuthMiddleware = async (c, next) => {
@@ -551,13 +510,13 @@ app.get('/api/ai-entity-insight', async (c) => {
       recentInteractionsD1 = await d1.select().from(entityInteractionsSchema).where(eq(entityInteractionsSchema.entityId, entityIdParam)).orderBy(desc(entityInteractionsSchema.timestamp)).limit(5).execute();
     }
     const prompt = `Given HA entity "${entityIdParam}" state: ${JSON.stringify(entityState)}. Recent interactions: ${JSON.stringify(recentInteractionsD1)}. Useful insights/next actions? Concise.`;
-    
+
     // Use Cloudflare AI binding
     if (!c.env.AI) {
         return c.json({ error: "AI binding not configured in worker environment." }, 500);
     }
     const aiModel = c.env.AI_MODEL || "@cf/meta/llama-3-8b-instruct"; // Default to a Llama model if not set
-    
+
     const messages = [
         { role: "system", content: "You are a helpful assistant providing insights about Home Assistant entities." },
         { role: "user", content: prompt }
@@ -570,17 +529,17 @@ app.get('/api/ai-entity-insight', async (c) => {
         console.error(`Error running AI model ${aiModel}:`, aiRunError);
         return c.json({ error: `Failed to run AI model: ${aiRunError.message}`, modelUsed: aiModel }, 500);
     }
-    
+
     // The response structure from c.env.AI.run for chat models is typically { response: "..." }
     if (aiResult && typeof aiResult.response === 'string') {
       return c.json({ entityId: entityIdParam, state: entityState, insight: aiResult.response, recentInteractions: recentInteractionsD1 });
-    } else { 
-      console.error("Unexpected API response structure from model:", aiModel, aiResult); 
-      return c.json({ error: "Failed to get insight from AI, unexpected response format.", modelUsed: aiModel, details: aiResult }, 500); 
+    } else {
+      console.error("Unexpected API response structure from model:", aiModel, aiResult);
+      return c.json({ error: "Failed to get insight from AI, unexpected response format.", modelUsed: aiModel, details: aiResult }, 500);
     }
-  } catch (aiError) { 
-    console.error("AI insight err:", aiError); 
-    return c.json({ error: `Failed to get AI insight: ${aiError.message}` }, 500); 
+  } catch (aiError) {
+    console.error("AI insight err:", aiError);
+    return c.json({ error: `Failed to get AI insight: ${aiError.message}` }, 500);
   }
 });
 

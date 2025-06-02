@@ -60,6 +60,6 @@ id = "8e30bb13e55843ec835a83f7106bdde3"
 
 [[d1_databases]]
 binding="DB"
-database_name = "home-assistant-proxy-api"
-id = "6fd26ae9-6e97-4293-983d-a4a3074f1aad"
+database_name = "hassio-agent"
+#id = "6fd26ae9-6e97-4293-983d-a4a3074f1aad"
 

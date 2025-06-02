@@ -1,11 +1,12 @@
-import { defineConfig } from "drizzle-orm/cli";
-import { join } from "path";
+import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  schema: "./src/index.js",
-  out: "./drizzle/migrations",
-  driver: "better-sqlite3",
+  schema: "./src/db/schema.ts",
+  out: "./migrations",
+  dialect: "sqlite",
+  driver: "d1-http",
   dbCredentials: {
-    url: "file:./drizzle/db.sqlite"
-  }
+    wranglerConfigPath: "./wrangler.toml",
+    dbName: "DB",
+  },
 });

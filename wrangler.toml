@@ -1,8 +1,7 @@
 name = "home-assistant-proxy-api" # Replace with your desired worker name
 main = "src/index.js" # Assuming your worker code is in src/index.js
 compatibility_date = "2024-05-01" # Or your desired compatibility date
-compatibility_flags = [ "nodejs_compat" ]
-node_compat = true
+
 # account_id = "YOUR_ACCOUNT_ID" # Replace with your Cloudflare Account ID
 
 # Specifies that this is an ES Module worker
@@ -32,7 +31,7 @@ binding = "AI" # Enables `env.AI.run()`
 # The current code uses Firebase SDK v9+ which is modular and generally worker-friendly,
 # but if issues arise, this might be needed.
 [node_compat]
-# enabled = true
+enabled = true
 
 # Example build configuration if you were using a bundler like esbuild or webpack
 # [build]

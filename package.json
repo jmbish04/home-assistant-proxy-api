@@ -1,5 +1,5 @@
 {
-  "name": "hassio-proxy-api",
+  "name": "hassio-proxy-worker",
   "version": "1.0.0",
   "main": "src/index.js",
   "type": "module",
@@ -11,7 +11,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
   },
   "dependencies": {
-    "home-assistant-js-websocket": "^10.2.0",
+    "home-assistant-js-websocket": "^9.1.0",
     "drizzle-orm": "^0.31.2",
     "hono": "^4.4.6"
   },

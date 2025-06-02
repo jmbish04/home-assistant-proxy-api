@@ -564,7 +564,7 @@ app.get('/api/ai-entity-insight', async (c) => {
     if (!c.env.AI) {
         return c.json({ error: "AI binding not configured in worker environment." }, 500);
     }
-    const aiModel = c.env.AI_MODEL || "@cf/meta/llama-2-7b-chat-fp16"; // Default to a Llama model if not set
+    const aiModel = c.env.AI_MODEL || "@cf/meta/llama-3-8b-instruct"; // Default to a Llama model if not set
     
     const messages = [
         { role: "system", content: "You are a helpful assistant providing insights about Home Assistant entities." },

@@ -19,6 +19,8 @@ import {
   subscribeLovelace,
 } from "home-assistant-js-websocket";
 
+
+
 // Drizzle ORM and D1 imports
 import { drizzle } from 'drizzle-orm/d1';
 import { sqliteTable, text, integer, sql } from 'drizzle-orm/sqlite-core';
@@ -29,26 +31,16 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
 // --- Drizzle Schema Definition ---
-// For a larger project, move this to a separate file (e.g., src/db/schema.js)
-export const entityInteractionsSchema = sqliteTable('entity_interactions', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  entityId: text('entity_id').notNull(),
-  domain: text('domain').notNull(),
-  service: text('service').notNull(),
-  timestamp: integer('timestamp', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
-});
+// At the top of src/index.js, replace the schema definition with:
+import { entityInteractionsSchema, homeAssistantEventsSchema } from './db/schema.js';
 
-export const homeAssistantEventsSchema = sqliteTable('home_assistant_events', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  eventType: text('event_type').notNull(),
-  eventData: text('event_data').notNull(), // Store as JSON string
-  timestamp: integer('timestamp', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
-});
-
-const drizzleSchemaObject = { // Renamed to avoid conflict with Hono's schema
+// Remove the schema definitions and just keep:
+const drizzleSchemaObject = {
     entityInteractionsSchema,
     homeAssistantEventsSchema,
 };
+
+
 
 // --- Globals for D1, KV, and Hono App ---
 let d1;

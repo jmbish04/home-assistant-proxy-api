@@ -2,6 +2,7 @@ name = "home-assistant-proxy-api" # Replace with your desired worker name
 main = "src/index.js" # Assuming your worker code is in src/index.js
 compatibility_date = "2024-05-01" # Or your desired compatibility date
 compatibility_flags = [ "nodejs_compat" ]
+node_compat = true
 # account_id = "YOUR_ACCOUNT_ID" # Replace with your Cloudflare Account ID
 
 # Specifies that this is an ES Module worker
